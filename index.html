@@ -12,7 +12,7 @@
 
     <style>
         :root {
-            --vermelho-logo: #B0272C; /* Cor da sua imagem cravada */
+            --vermelho-logo: #B0272C; 
             --caseiro-dark: #4E342E;
             --creme: #FDF6F0;
             --text-dark: #3E2723;
@@ -41,7 +41,7 @@
         }
 
         .btn-baixar {
-            background: #2E7D32; /* Botão Verde de Download */
+            background: #2E7D32; 
             color: white;
             border: none;
             padding: 15px 30px;
@@ -59,19 +59,22 @@
         .btn-baixar:hover { background: #1B5E20; }
         .btn-baixar:disabled { background: #888; cursor: not-allowed; }
 
-        /* Container global para o PDF */
         #conteudo-para-pdf {
             margin: 0 auto;
             width: 100%;
         }
 
-        #cards-container {
+        /* NOVA REGRA: Agrupa de 4 em 4 formando uma página A4 perfeita */
+        .folha-a4 {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
+            align-content: flex-start;
             gap: 30px;
             max-width: 1400px;
-            margin: 0 auto;
+            margin: 0 auto 40px auto;
+            /* Força a quebra de página exata ao final deste bloco */
+            page-break-after: always; 
         }
 
         .table-card {
@@ -86,15 +89,15 @@
             flex-direction: column;
             align-items: center;
             border: 1px solid rgba(78, 52, 46, 0.1);
-            page-break-inside: avoid; /* Não corta o cartão no meio da folha */
+            page-break-inside: avoid; 
         }
 
         .secao-verso {
-            margin-top: 50px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            page-break-before: always; /* Joga o verso pra folha seguinte */
+            page-break-before: always; 
+            width: 100%;
         }
 
         .table-card-back {
@@ -194,25 +197,27 @@
 
         .instagram-handle i { font-size: 1.4rem; }
 
-        /* MODO PDF: Formata a tela para folha A4 com exatidão na hora de tirar a foto */
+        /* Formatação de alta precisão para a folha A4 no PDF */
         .modo-pdf-ativo {
-            width: 794px !important; /* Largura A4 */
+            width: 794px !important; 
             background: white !important;
-            padding: 15px !important;
+            padding: 0 !important;
         }
-        .modo-pdf-ativo #cards-container {
-            gap: 15px !important;
+        .modo-pdf-ativo .folha-a4 {
+            gap: 20px !important;
+            padding: 20px 0 !important;
+            margin: 0 !important;
+            height: 1100px !important; /* Trava a altura da A4 */
         }
         .modo-pdf-ativo .table-card {
             box-shadow: none !important;
             border: 1px dashed #ccc !important;
-            margin-bottom: 10px;
         }
         .modo-pdf-ativo .table-card-back {
             border: none !important;
         }
         .modo-pdf-ativo .titulo-verso {
-            display: none !important; /* Esconde o texto explicativo no PDF final */
+            display: none !important; 
         }
     </style>
 </head>
@@ -221,7 +226,7 @@
     <div class="painel-controle no-print">
         <div>
             <h2 style="margin: 0; color: var(--text-dark);">Gerador de QR Codes</h2>
-            <p style="margin: 5px 0 0; color: #666;"><b>Aviso:</b> Hospede este arquivo no GitHub/Netlify para o botão de PDF funcionar sem bloquear a imagem!</p>
+            <p style="margin: 5px 0 0; color: #666;">Os cartões foram divididos em páginas perfeitas. Clique no botão para baixar!</p>
         </div>
 
         <button id="btn-gerar" class="btn-baixar" onclick="gerarPDF()">
@@ -234,7 +239,7 @@
         
         <div id="cards-container"></div>
 
-        <div class="secao-verso">
+        <div class="secao-verso folha-a4">
             <h2 class="titulo-verso" style="color: var(--text-dark); margin-bottom: 20px;">Cartão de Verso (Nova Página)</h2>
             <div class="table-card table-card-back">
                 <img src="logo.png" alt="Logo Feito Casa Verso" class="logo-img-back">
@@ -247,10 +252,13 @@
         const container = document.getElementById('cards-container');
         const linkBaseUrl = 'https://vilmar-feito-casa.netlify.app/?cartao=';
         let htmlGerado = '';
+        let cartoesTemp = ''; // Variável temporária para juntar 4 cartões
 
+        // Loop que gera os 100 cartões e divide de 4 em 4
         for (let i = 1; i <= 100; i++) {
             const numCartao = i.toString().padStart(2, '0');
-            htmlGerado += `
+            
+            cartoesTemp += `
                 <div class="table-card">
                     <div class="header">
                         <img src="logo.png" alt="Logo Feito Casa" class="logo-img">
@@ -269,10 +277,21 @@
                     </div>
                 </div>
             `;
+
+            // Quando junta 4 cartões, coloca eles dentro de uma "folha A4" e limpa a variável temporária
+            if (i % 4 === 0 || i === 100) {
+                htmlGerado += `
+                    <div class="folha-a4">
+                        ${cartoesTemp}
+                    </div>
+                `;
+                cartoesTemp = '';
+            }
         }
 
         container.innerHTML = htmlGerado;
 
+        // Renderiza as imagens do QR Code
         for (let i = 1; i <= 100; i++) {
             const numCartao = i.toString().padStart(2, '0');
             const linkCompleto = `${linkBaseUrl}${numCartao}`;
@@ -287,9 +306,6 @@
             });
         }
 
-        // ==========================================
-        // GERAÇÃO DO PDF DIRETO PELO SCRIPT
-        // ==========================================
         function gerarPDF() {
             const btn = document.getElementById('btn-gerar');
             const conteudo = document.getElementById('conteudo-para-pdf');
@@ -297,18 +313,17 @@
             btn.innerHTML = '<span class="material-icons" style="color: white; font-size: 24px;">hourglass_empty</span> Gerando Arquivo...';
             btn.disabled = true;
 
-            // Formata o layout para caber exato na folha do PDF
             conteudo.classList.add('modo-pdf-ativo');
 
-            // Timeout para o navegador processar o novo layout antes de "bater a foto"
             setTimeout(() => {
                 const opt = {
-                    margin:       [10, 0, 10, 0], // Margem leve em cima e embaixo, 0 nas laterais
+                    margin:       0, // Margem zero, pois já controlamos o espaço via CSS
                     filename:     'Cartoes_Mesa_FeitoCasa.pdf',
-                    image:        { type: 'jpeg', quality: 1.0 }, // Qualidade máxima
-                    html2canvas:  { scale: 2, useCORS: true },    // useCORS é o que permite pegar sua logo da web
+                    image:        { type: 'jpeg', quality: 1.0 }, 
+                    html2canvas:  { scale: 2, useCORS: true },    
                     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                    pagebreak:    { mode: ['css', 'legacy'] }
+                    // Habilita a quebra exata na classe que configuramos
+                    pagebreak:    { mode: 'css' }
                 };
 
                 html2pdf().set(opt).from(conteudo).save().then(() => {
@@ -316,7 +331,7 @@
                     btn.innerHTML = '<span class="material-icons" style="color: white; font-size: 24px;">download</span> Baixar PDF Direto';
                     btn.disabled = false;
                 }).catch(err => {
-                    alert("Aviso: O PDF não pôde carregar a imagem local por segurança do navegador. Suba o arquivo para um servidor (GitHub/Netlify) ou use uma extensão de Live Server para rodar!");
+                    alert("Aviso: Falha ao gerar. Verifique se o projeto está hospedado em um servidor online.");
                     conteudo.classList.remove('modo-pdf-ativo');
                     btn.innerHTML = 'Baixar PDF Direto';
                     btn.disabled = false;
