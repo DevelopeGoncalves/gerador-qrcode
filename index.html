@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerador de QR Codes - Feito Casa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --vermelho-logo: #B0272C; /* Cor da sua imagem cravada */
+            --caseiro-dark: #4E342E;
+            --creme: #FDF6F0;
+            --text-dark: #3E2723;
+            --white: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #e6e6e6;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .painel-controle {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .btn-baixar {
+            background: #2E7D32; /* Botão Verde de Download */
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(46, 125, 50, 0.3);
+            transition: 0.2s;
+        }
+
+        .btn-baixar:hover { background: #1B5E20; }
+        .btn-baixar:disabled { background: #888; cursor: not-allowed; }
+
+        /* Container global para o PDF */
+        #conteudo-para-pdf {
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        #cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .table-card {
+            width: 320px;
+            height: 500px;
+            background: var(--creme);
+            border-radius: 16px;
+            box-shadow: 0 15px 40px rgba(62, 39, 35, 0.15);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid rgba(78, 52, 46, 0.1);
+            page-break-inside: avoid; /* Não corta o cartão no meio da folha */
+        }
+
+        .secao-verso {
+            margin-top: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            page-break-before: always; /* Joga o verso pra folha seguinte */
+        }
+
+        .table-card-back {
+            background: var(--vermelho-logo); 
+            display: flex;
+            justify-content: center; 
+            align-items: center;     
+            border: 2px solid #E8B923; 
+        }
+
+        .logo-img-back {
+            width: 240px; 
+            height: auto;
+            z-index: 3;
+        }
+
+        .header {
+            width: 100%;
+            height: 150px; 
+            background: var(--vermelho-logo); 
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; 
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header::after {
+            content: "";
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 25px;
+            background: var(--creme);
+            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+            z-index: 2;
+        }
+
+        .logo-img {
+            width: 180px; 
+            height: auto;
+            z-index: 3;
+            margin-top: 10px;
+        }
+
+        .mesa-badge {
+            margin-top: 5px; 
+            background: var(--white);
+            color: var(--vermelho-logo);
+            padding: 8px 45px;
+            border-radius: 25px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            border: 2px solid var(--vermelho-logo);
+        }
+
+        .qr-container {
+            margin-top: 25px; 
+            padding: 12px;
+            border: 2px dashed var(--vermelho-logo); 
+            border-radius: 12px;
+            background: var(--white);
+        }
+
+        .qr-code {
+            width: 190px;
+            height: 190px;
+            display: block;
+            mix-blend-mode: multiply;
+        }
+
+        .cta { 
+            margin-top: auto; 
+            margin-bottom: auto; 
+            width: 100%;
+            display: flex;               
+            justify-content: center;     
+            align-items: center;         
+        }
+        
+        .instagram-handle { 
+            margin: 0; 
+            font-family: 'Montserrat', sans-serif; 
+            font-weight: 700; 
+            font-size: 1.25rem; 
+            color: var(--vermelho-logo); 
+            letter-spacing: 0.5px;
+            display: flex;               
+            align-items: center;
+            gap: 8px;                    
+        }
+
+        .instagram-handle i { font-size: 1.4rem; }
+
+        /* MODO PDF: Formata a tela para folha A4 com exatidão na hora de tirar a foto */
+        .modo-pdf-ativo {
+            width: 794px !important; /* Largura A4 */
+            background: white !important;
+            padding: 15px !important;
+        }
+        .modo-pdf-ativo #cards-container {
+            gap: 15px !important;
+        }
+        .modo-pdf-ativo .table-card {
+            box-shadow: none !important;
+            border: 1px dashed #ccc !important;
+            margin-bottom: 10px;
+        }
+        .modo-pdf-ativo .table-card-back {
+            border: none !important;
+        }
+        .modo-pdf-ativo .titulo-verso {
+            display: none !important; /* Esconde o texto explicativo no PDF final */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="painel-controle no-print">
+        <div>
+            <h2 style="margin: 0; color: var(--text-dark);">Gerador de QR Codes</h2>
+            <p style="margin: 5px 0 0; color: #666;"><b>Aviso:</b> Hospede este arquivo no GitHub/Netlify para o botão de PDF funcionar sem bloquear a imagem!</p>
+        </div>
+
+        <button id="btn-gerar" class="btn-baixar" onclick="gerarPDF()">
+            <span class="material-icons" style="color: white; font-size: 24px;">download</span>
+            Baixar PDF Direto
+        </button>
+    </div>
+
+    <div id="conteudo-para-pdf">
+        
+        <div id="cards-container"></div>
+
+        <div class="secao-verso">
+            <h2 class="titulo-verso" style="color: var(--text-dark); margin-bottom: 20px;">Cartão de Verso (Nova Página)</h2>
+            <div class="table-card table-card-back">
+                <img src="logo.png" alt="Logo Feito Casa Verso" class="logo-img-back">
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const container = document.getElementById('cards-container');
+        const linkBaseUrl = 'https://vilmar-feito-casa.netlify.app/?cartao=';
+        let htmlGerado = '';
+
+        for (let i = 1; i <= 100; i++) {
+            const numCartao = i.toString().padStart(2, '0');
+            htmlGerado += `
+                <div class="table-card">
+                    <div class="header">
+                        <img src="logo.png" alt="Logo Feito Casa" class="logo-img">
+                    </div>
+                    
+                    <div class="mesa-badge">${numCartao}</div>
+
+                    <div class="qr-container">
+                        <canvas id="qr-${numCartao}" class="qr-code"></canvas>
+                    </div>
+
+                    <div class="cta">
+                        <h3 class="instagram-handle">
+                            <i class="fab fa-instagram"></i>@feitocasarestaurante
+                        </h3>
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = htmlGerado;
+
+        for (let i = 1; i <= 100; i++) {
+            const numCartao = i.toString().padStart(2, '0');
+            const linkCompleto = `${linkBaseUrl}${numCartao}`;
+            
+            new QRious({
+                element: document.getElementById(`qr-${numCartao}`),
+                value: linkCompleto,
+                size: 300,
+                background: 'white',
+                foreground: '#3E2723', 
+                level: 'M'
+            });
+        }
+
+        // ==========================================
+        // GERAÇÃO DO PDF DIRETO PELO SCRIPT
+        // ==========================================
+        function gerarPDF() {
+            const btn = document.getElementById('btn-gerar');
+            const conteudo = document.getElementById('conteudo-para-pdf');
+
+            btn.innerHTML = '<span class="material-icons" style="color: white; font-size: 24px;">hourglass_empty</span> Gerando Arquivo...';
+            btn.disabled = true;
+
+            // Formata o layout para caber exato na folha do PDF
+            conteudo.classList.add('modo-pdf-ativo');
+
+            // Timeout para o navegador processar o novo layout antes de "bater a foto"
+            setTimeout(() => {
+                const opt = {
+                    margin:       [10, 0, 10, 0], // Margem leve em cima e embaixo, 0 nas laterais
+                    filename:     'Cartoes_Mesa_FeitoCasa.pdf',
+                    image:        { type: 'jpeg', quality: 1.0 }, // Qualidade máxima
+                    html2canvas:  { scale: 2, useCORS: true },    // useCORS é o que permite pegar sua logo da web
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak:    { mode: ['css', 'legacy'] }
+                };
+
+                html2pdf().set(opt).from(conteudo).save().then(() => {
+                    conteudo.classList.remove('modo-pdf-ativo');
+                    btn.innerHTML = '<span class="material-icons" style="color: white; font-size: 24px;">download</span> Baixar PDF Direto';
+                    btn.disabled = false;
+                }).catch(err => {
+                    alert("Aviso: O PDF não pôde carregar a imagem local por segurança do navegador. Suba o arquivo para um servidor (GitHub/Netlify) ou use uma extensão de Live Server para rodar!");
+                    conteudo.classList.remove('modo-pdf-ativo');
+                    btn.innerHTML = 'Baixar PDF Direto';
+                    btn.disabled = false;
+                });
+            }, 500); 
+        }
+    </script>
+
+</body>
+</html>
