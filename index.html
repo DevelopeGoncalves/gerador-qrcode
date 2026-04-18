@@ -64,7 +64,7 @@
             width: 100%;
         }
 
-        /* NOVA REGRA: Agrupa de 4 em 4 formando uma página A4 perfeita */
+        /* Agrupamento perfeito para A4 */
         .folha-a4 {
             display: flex;
             flex-wrap: wrap;
@@ -73,7 +73,6 @@
             gap: 30px;
             max-width: 1400px;
             margin: 0 auto 40px auto;
-            /* Força a quebra de página exata ao final deste bloco */
             page-break-after: always; 
         }
 
@@ -197,7 +196,7 @@
 
         .instagram-handle i { font-size: 1.4rem; }
 
-        /* Formatação de alta precisão para a folha A4 no PDF */
+        /* Formatação Limpa para o PDF */
         .modo-pdf-ativo {
             width: 794px !important; 
             background: white !important;
@@ -207,7 +206,6 @@
             gap: 20px !important;
             padding: 20px 0 !important;
             margin: 0 !important;
-            height: 1100px !important; /* Trava a altura da A4 */
         }
         .modo-pdf-ativo .table-card {
             box-shadow: none !important;
@@ -226,7 +224,7 @@
     <div class="painel-controle no-print">
         <div>
             <h2 style="margin: 0; color: var(--text-dark);">Gerador de QR Codes</h2>
-            <p style="margin: 5px 0 0; color: #666;">Os cartões foram divididos em páginas perfeitas. Clique no botão para baixar!</p>
+            <p style="margin: 5px 0 0; color: #666;">Se der tela branca, publique no Netlify/GitHub primeiro!</p>
         </div>
 
         <button id="btn-gerar" class="btn-baixar" onclick="gerarPDF()">
@@ -252,7 +250,7 @@
         const container = document.getElementById('cards-container');
         const linkBaseUrl = 'https://vilmar-feito-casa.netlify.app/?cartao=';
         let htmlGerado = '';
-        let cartoesTemp = ''; // Variável temporária para juntar 4 cartões
+        let cartoesTemp = ''; 
 
         // Loop que gera os 100 cartões e divide de 4 em 4
         for (let i = 1; i <= 100; i++) {
@@ -278,7 +276,6 @@
                 </div>
             `;
 
-            // Quando junta 4 cartões, coloca eles dentro de uma "folha A4" e limpa a variável temporária
             if (i % 4 === 0 || i === 100) {
                 htmlGerado += `
                     <div class="folha-a4">
@@ -291,7 +288,6 @@
 
         container.innerHTML = htmlGerado;
 
-        // Renderiza as imagens do QR Code
         for (let i = 1; i <= 100; i++) {
             const numCartao = i.toString().padStart(2, '0');
             const linkCompleto = `${linkBaseUrl}${numCartao}`;
@@ -307,6 +303,12 @@
         }
 
         function gerarPDF() {
+            // TRAVA DE SEGURANÇA: Avisa o usuário se ele estiver rodando do disco rígido
+            if (window.location.protocol === 'file:') {
+                alert("⛔ ERRO DE SEGURANÇA DO NAVEGADOR:\\n\\nVocê está rodando este arquivo direto do seu computador (file:///). O Chrome bloqueia as imagens na hora de gerar o PDF, deixando a página toda em branco!\\n\\nSolução:\\nPublique no Netlify/GitHub ou use a extensão 'Live Server' no seu editor de código.");
+                return;
+            }
+
             const btn = document.getElementById('btn-gerar');
             const conteudo = document.getElementById('conteudo-para-pdf');
 
@@ -317,12 +319,11 @@
 
             setTimeout(() => {
                 const opt = {
-                    margin:       0, // Margem zero, pois já controlamos o espaço via CSS
+                    margin:       0, 
                     filename:     'Cartoes_Mesa_FeitoCasa.pdf',
                     image:        { type: 'jpeg', quality: 1.0 }, 
-                    html2canvas:  { scale: 2, useCORS: true },    
+                    html2canvas:  { scale: 2, useCORS: true, allowTaint: true },    
                     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                    // Habilita a quebra exata na classe que configuramos
                     pagebreak:    { mode: 'css' }
                 };
 
@@ -331,7 +332,7 @@
                     btn.innerHTML = '<span class="material-icons" style="color: white; font-size: 24px;">download</span> Baixar PDF Direto';
                     btn.disabled = false;
                 }).catch(err => {
-                    alert("Aviso: Falha ao gerar. Verifique se o projeto está hospedado em um servidor online.");
+                    alert("Aviso: Falha ao gerar o PDF. Verifique sua conexão ou servidor.");
                     conteudo.classList.remove('modo-pdf-ativo');
                     btn.innerHTML = 'Baixar PDF Direto';
                     btn.disabled = false;
